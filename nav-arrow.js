@@ -38,28 +38,41 @@ export class NavArrow extends DDDSuper(I18NMixin(LitElement)) {
     return [super.styles,
     css`
       :host {
-        display: block;
-        color: var(--ddd-theme-primary);
-        background-color: var(--ddd-theme-accent);
-        font-family: var(--ddd-font-navigation);
-      }
+  display: block;
+  position: absolute;   /* absolute inside .image-wrapper */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* let clicks pass to wrapper except buttons */
+}
         .wrapper {
         display: flex;
         justify-content: space-between;
         align-items: center;
       }
 
-        .left-arrow, .right-arrow {
-        background-color: var(--ddd-theme-default-white);
-        color: var(--ddd-theme-default-link);
-        border: var(--ddd-border-md);
-        border-color: var(--ddd-theme-default-link);
-        padding: var(--ddd-spacing-1) var(--ddd-spacing-3);
-        margin: 0 -15px;
-        border-radius: var(--ddd-radius-circle);
-        font-size: var(--ddd-font-size-xs);
-        cursor: pointer;
-        }
+      .left-arrow,
+.right-arrow {
+  pointer-events: auto; /* enable clicking buttons */
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  background-color: var(--ddd-theme-default-white);
+  border-radius: var(--ddd-radius-circle);
+  font-size: var(--ddd-font-size-xs);
+  padding: var(--ddd-spacing-1) var(--ddd-spacing-3);
+  cursor: pointer;
+}
+
+.left-arrow {
+  left: 10px;
+}
+
+.right-arrow {
+  right: 10px;
+}
 
         .left-arrow:hover, .right-arrow:hover {
             opacity: 0.7;

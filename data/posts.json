@@ -1,0 +1,12 @@
+{
+    "posts" : [
+        {
+            "id": 1,
+            "image": "https://preview.redd.it/product-covers-v0-glujfttrau2e1.jpg?width=1080&crop=smart&auto=webp&s=5519e3bc8aed11d1ef4b9cf7411bb623cc3f69e8"
+        },
+        {
+            "id": 2,
+            "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSD70aqcVPa7WBjG8J7YXvonypCPrtwBG3cpRDMAm0EUTzNC18N40-XTPdRAIM_xFRi9r3RofUltfdS2UsoXEUqLreVVMrD3HT0RiCv4UtNOQ&s=10"
+        }
+    ]
+}

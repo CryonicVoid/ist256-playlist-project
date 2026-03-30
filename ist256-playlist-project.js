@@ -8,6 +8,7 @@ import { I18NMixin } from "@haxtheweb/i18n-manager/lib/I18NMixin.js";
 import { ControlBar } from "./control-bar";
 import { ImgDisplay } from "./image-display";
 import { NavArrow } from "./nav-arrow";
+import { ImageCard } from "./image-card";
 /**
  * `ist256-playlist-project`
  *
@@ -24,6 +25,7 @@ export class Ist256PlaylistProject extends DDDSuper(I18NMixin(LitElement)) {
     this.totalSlides = 0;
     this.slides = [];
     this.title = "";
+    this.url = window.location.href;
   }
 
   // Lit reactive properties
@@ -31,9 +33,10 @@ export class Ist256PlaylistProject extends DDDSuper(I18NMixin(LitElement)) {
     return {
       ...super.properties,
       title: { type: String },
-      currentIndex: {type: Number},
-      totalSlides: {type: Number},
-      slides: {type: Array}
+      currentIndex: { type: Number },
+      totalSlides: { type: Number },
+      slides: { type: Array },
+      url: { type: String },
     };
   }
 
@@ -48,10 +51,9 @@ export class Ist256PlaylistProject extends DDDSuper(I18NMixin(LitElement)) {
           background-color: var(--ddd-theme-accent);
           font-family: var(--ddd-font-navigation);
           position: relative;
-          
         }
         // This Controls the size for the bar and the main background :))
-        .wrapper { 
+        .wrapper {
           margin: var(--ddd-spacing-2);
           padding: var(--ddd-spacing-4);
           position: flex;
@@ -65,47 +67,84 @@ export class Ist256PlaylistProject extends DDDSuper(I18NMixin(LitElement)) {
           width: 100%;
           height: 75vh;
           border-radius: var(--ddd-spacing-4);
+          position: relative;
         }
       `,
     ];
   }
 
+  async getPost() {
+    try {
+      const resp = await fetch("./posts.json");
+      if (!resp.ok) throw new Error("Network response was not ok");
 
+      const data = await resp.json();
+      const urlParams = new URLSearchParams(window.location.search);
 
-
-firstUpdated() {
-  this._updateSlides();
-
-  // fetch fox for first slide
-  const imageDisplay = this.renderRoot.querySelector('image-display');
-  if (imageDisplay) {
-    imageDisplay.updateForSlide(this.currentIndex);
+      console.log(urlParams);
+      const posts = urlParams.get("posts");
+      if (posts) {
+        console.log("there is posts params.");
+      } else {
+        console.log("errerrerr");
+      }
+    } catch (e) {
+      console.error("Failed to fetch fox:", e);
+      this.foxImage = "fallback.png"; // optional
+    }
   }
-}
-_updateSlides() {
-  // activate the correct slide
-  this.slides.forEach((slide, i) => slide.active = (i === this.currentIndex));
-
-  // dispatch event for control bar
-  const indexChange = new CustomEvent("play-list-index-changed", {
-    composed: true,
-    bubbles: true,
-    detail: {
-      index: this.currentIndex
-    },
-  });
-  this.dispatchEvent(indexChange);
-
-  // --- ADD THIS: tell image-display to update ---
-  const imageDisplay = this.renderRoot.querySelector('image-display');
-  if (imageDisplay) {
-    imageDisplay.updateForSlide(this.currentIndex);
+  toggleLikes(id) {
+    const likes = JSON.parse(localStorage.getItem("likes") || "{}");
+    likes[id] = !likes[id];
+    console.log(likes)
+    localStorage.setItem("likes", JSON.stringify(likes));
   }
-}
+
+  async loadPosts() {
+    const resp = await fetch("/api/posts");
+    this.slides = await resp.json();
+    console.log("API RETURNED:", this.slides);
+    this.totalSlides = this.slides.length;
+  }
+
+  _getFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const i = Number(params.get("activeIndex"));
+    if (!isNaN(i)) this.currentIndex = i;
+  }
+  _updateUrl() {
+    const params = new URLSearchParams(window.location.search);
+    params.set("activeIndex", this.currentIndex);
+    window.history.replaceState({}, "", `?${params.toString()}`);
+  }
+  updated(changedProperties) {
+    if (changedProperties.has("imageUrl")) {
+      console.log("imageUrl updated:", this.imageUrl);
+    }
+  }
+
+  async firstUpdated() {
+    await this.loadPosts();
+    this._getFromUrl();
+  }
+  _updateSlides() {
+    // activate the correct slide
+    this.slides.forEach((slide, i) => (slide.active = i === this.currentIndex));
+
+    // dispatch event for control bar
+    const indexChange = new CustomEvent("play-list-index-changed", {
+      composed: true,
+      bubbles: true,
+      detail: {
+        index: this.currentIndex,
+      },
+    });
+    this.dispatchEvent(indexChange);
+  }
 
   nextSlide() {
     if (this.currentIndex < this.totalSlides - 1) {
-      this.currentIndex ++;
+      this.currentIndex++;
     }
     this._updateSlides();
   }
@@ -123,30 +162,37 @@ _updateSlides() {
   }
   // Lit render the HTML
   render() {
+  //  if (!this.slides.length) {
+    //  return html`<p>Loading posts...</p>`;
+   // }
+
+    const slide = this.slides[this.currentIndex];
+    const imageUrl = slide ? slide.full : "";
+    console.log("CURRENT SLIDE:", slide);
     return html` <div class="wrapper">
       <div class="mainbg">
-        <image-display   
-        .currentIndex=${this.currentIndex}
-  .totalSlides=${this.totalSlides}></image-display>
-        <nav-arrow     .currentIndex=${this.currentIndex}
-        .totalSlides=${this.totalSlides}
-        @previous-slide="${this.previousSlide}"   
-        @next-slide="${this.nextSlide}"> </nav-arrow>
+        <image-card
+          .imageUrl=${this.slides[this.currentIndex]?.full}
+          .title=${this.slides[this.currentIndex]?.title}
+          .description=${this.slides[this.currentIndex]?.description}
+          .author=${this.slides[this.currentIndex]?.author}
+          .id=${this.slides[this.currentIndex]?.id}
+        ></image-card>
+        <nav-arrow
+          .currentIndex=${this.currentIndex}
+          .totalSlides=${this.totalSlides}
+          @previous-slide="${this.previousSlide}"
+          @next-slide="${this.nextSlide}"
+        >
+        </nav-arrow>
       </div>
-  <control-bar
-  @play-list-index-changed="${this.handleEvent}"
-  .currentIndex=${this.currentIndex}
-  .totalSlides=${this.totalSlides}>
-</control-bar>
+      <control-bar
+        @play-list-index-changed="${this.handleEvent}"
+        .currentIndex=${this.currentIndex}
+        .totalSlides=${this.totalSlides}
+      >
+      </control-bar>
     </div>`;
-  }
-
-  /**
-   * haxProperties integration via file reference
-   */
-  static get haxProperties() {
-    return new URL(`./lib/${this.tag}.haxProperties.json`, import.meta.url)
-      .href;
   }
 }
 
