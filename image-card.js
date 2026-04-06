@@ -215,7 +215,7 @@ export class ImageCard extends LitElement {
       .action-label {
         margin-top: 4px;
         font-size: 0.6rem;
-        font-weight: var(--ddd-font-size-bold);
+        font-weight: 600;
         color: #fff;
         text-shadow: 0 1px 3px rgba(0,0,0,0.6);
         white-space: nowrap;
