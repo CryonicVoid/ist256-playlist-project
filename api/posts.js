@@ -9,16 +9,11 @@ export default function handler(req, res) {
   const posts = data.posts.map((p, index) => ({
     id: p.id,
     title: `Image ${p.id}`,
-    description: `Description for image ${p.id}`,
-    dateTaken: "2024-01-01",
-    thumbnail: p.image,
-    full: p.image,
-    author: {
-      name: "CryonicVoid",
-      image: `https://i.pravatar.cc/100?img=${index}`,
-      since: "2023",
-      channel: "IST256"
-    }
+    description: p.description,
+    dateTaken: p.dateTaken,
+    thumbnail: p.full,
+    full: p.full,
+    author: p.author
   }));
 
   res.status(200).json(posts);

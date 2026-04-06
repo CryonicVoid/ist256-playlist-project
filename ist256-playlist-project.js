@@ -42,61 +42,93 @@ export class Ist256PlaylistProject extends DDDSuper(I18NMixin(LitElement)) {
 
   // Lit scoped styles
   static get styles() {
-    return [
-      super.styles,
-      css`
-        :host {
-          display: block;
-          color: var(--ddd-theme-primary);
-          background-color: var(--ddd-theme-accent);
-          font-family: var(--ddd-font-navigation);
-          position: relative;
-        }
-        // This Controls the size for the bar and the main background :))
+  return [
+    super.styles,
+    css`
+      :host {
+        display: block;
+        color: var(--ddd-theme-primary);
+        background-color: var(--ddd-theme-accent);
+        font-family: var(--ddd-font-navigation);
+      }
+
+      .wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: clamp(280px, 35vw, 520px);
+        margin: 0 auto;
+        padding: var(--ddd-spacing-4);
+        gap: var(--ddd-spacing-2);
+      }
+
+      .mainbg {
+        background-color: var(--ddd-theme-default-skyBlue);
+        width: 100%;
+        height: 75vh;
+        border-radius: var(--ddd-spacing-4);
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* Row that holds left arrow + control bar + right arrow */
+      .bottom-bar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        gap: var(--ddd-spacing-2);
+      }
+
+      .nav-btn {
+        flex-shrink: 0;
+        background: rgba(255,255,255,0.85);
+        border: none;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        font-size: 1.2rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        transition: background 0.15s, transform 0.15s;
+      }
+
+      .nav-btn:hover:not(:disabled) {
+        background: rgba(255,255,255,1);
+        transform: scale(1.08);
+      }
+
+      .nav-btn:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+      }
+
+      control-bar {
+        flex: 1;
+        min-width: 0;
+      }
+
+      @media (max-width: 600px) {
         .wrapper {
-          margin: var(--ddd-spacing-2);
-          padding: var(--ddd-spacing-4);
-          position: flex;
-          flex: auto;
-          align-content: center;
-          flex-direction: column;
-          width: 35vw; // here. it uses viewport width.
+          width: 95vw;
+          padding: var(--ddd-spacing-2);
         }
         .mainbg {
-          background-color: var(--ddd-theme-default-skyBlue);
-          width: 100%;
-          height: 75vh;
-          border-radius: var(--ddd-spacing-4);
-          position: relative;
+          height: 70vh;
         }
-      `,
-    ];
-  }
-
-  async getPost() {
-    try {
-      const resp = await fetch("./posts.json");
-      if (!resp.ok) throw new Error("Network response was not ok");
-
-      const data = await resp.json();
-      const urlParams = new URLSearchParams(window.location.search);
-
-      console.log(urlParams);
-      const posts = urlParams.get("posts");
-      if (posts) {
-        console.log("there is posts params.");
-      } else {
-        console.log("errerrerr");
       }
-    } catch (e) {
-      console.error("Failed to fetch fox:", e);
-      this.foxImage = "fallback.png"; // optional
-    }
-  }
+    `,
+  ];
+}
+
+  
   toggleLikes(id) {
     const likes = JSON.parse(localStorage.getItem("likes") || "{}");
     likes[id] = !likes[id];
-    console.log(likes)
+    console.log(likes);
     localStorage.setItem("likes", JSON.stringify(likes));
   }
 
@@ -121,11 +153,15 @@ export class Ist256PlaylistProject extends DDDSuper(I18NMixin(LitElement)) {
     if (changedProperties.has("imageUrl")) {
       console.log("imageUrl updated:", this.imageUrl);
     }
+    if (changedProperties.has("slides")) {
+    this.totalSlides = this.slides.length;
+  }
   }
 
   async firstUpdated() {
-    await this.loadPosts();
     this._getFromUrl();
+    await this.loadPosts();
+    this._updateUrl();
   }
   _updateSlides() {
     // activate the correct slide
@@ -146,6 +182,7 @@ export class Ist256PlaylistProject extends DDDSuper(I18NMixin(LitElement)) {
     if (this.currentIndex < this.totalSlides - 1) {
       this.currentIndex++;
     }
+    this._updateUrl();
     this._updateSlides();
   }
 
@@ -153,47 +190,55 @@ export class Ist256PlaylistProject extends DDDSuper(I18NMixin(LitElement)) {
     if (this.currentIndex > 0) {
       this.currentIndex--;
     }
+    this._updateUrl();
     this._updateSlides();
   }
 
   handleEvent(e) {
     this.currentIndex = e.detail.index;
+    this._updateUrl();
     this._updateSlides();
   }
   // Lit render the HTML
-  render() {
-  //  if (!this.slides.length) {
-    //  return html`<p>Loading posts...</p>`;
-   // }
+ render() {
+  const slide = this.slides[this.currentIndex];
 
-    const slide = this.slides[this.currentIndex];
-    const imageUrl = slide ? slide.full : "";
-    console.log("CURRENT SLIDE:", slide);
-    return html` <div class="wrapper">
+  return html`
+    <div class="wrapper">
       <div class="mainbg">
         <image-card
-          .imageUrl=${this.slides[this.currentIndex]?.full}
-          .title=${this.slides[this.currentIndex]?.title}
-          .description=${this.slides[this.currentIndex]?.description}
-          .author=${this.slides[this.currentIndex]?.author}
-          .id=${this.slides[this.currentIndex]?.id}
+          .imageUrl=${slide?.full ?? ""}
+          .title=${slide?.title ?? ""}
+          .description=${slide?.description ?? ""}
+          .author=${slide?.author ?? {}}
+          .dateTaken=${slide?.dateTaken ?? ""}
+          .id=${slide?.id ?? 0}
         ></image-card>
-        <nav-arrow
+      </div>
+
+      <div class="bottom-bar">
+        <button
+          class="nav-btn"
+          ?disabled=${this.currentIndex === 0}
+          @click="${this.previousSlide}"
+        >&#8249;</button>
+
+        <control-bar
+          @play-list-index-changed="${this.handleEvent}"
           .currentIndex=${this.currentIndex}
           .totalSlides=${this.totalSlides}
-          @previous-slide="${this.previousSlide}"
-          @next-slide="${this.nextSlide}"
-        >
-        </nav-arrow>
+          .slides=${this.slides}
+        ></control-bar>
+
+        <button
+          class="nav-btn"
+          ?disabled=${this.currentIndex === this.totalSlides - 1}
+          @click="${this.nextSlide}"
+        >&#8250;</button>
       </div>
-      <control-bar
-        @play-list-index-changed="${this.handleEvent}"
-        .currentIndex=${this.currentIndex}
-        .totalSlides=${this.totalSlides}
-      >
-      </control-bar>
-    </div>`;
-  }
+    </div>
+  `;
+}
 }
 
 globalThis.customElements.define(
